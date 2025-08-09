@@ -1,3 +1,6 @@
+use std::io::Read; // using this trait to read from the stream
+use std::net::TcpListener;
+
 /**
  * Server struct definition
  */
@@ -25,6 +28,30 @@ impl Server {
         // not using &self as we want to take ownership of the instance
         // not using &mut self as we are not modifying the instance
 
-        println!("Server is running on {}", self.addr)
+        println!("Server is running on {}", self.addr);
+        // returns results => error handling
+        // unwrap() is used to panic if there is an error, and terminates the program
+        let listener = TcpListener::bind(&self.addr).unwrap();
+
+        loop {
+            // let res = listener.accept(); // we cannot use `unwrap()` here as it will terminate the program if there is an error
+
+            match listener.accept() {
+                Ok((mut stream, _addr)) => {
+                    // adding underscore to ignore the variables
+                    println!("=====>New connection established from: {}", _addr);
+
+                    // using read trait from std::io which has implementation for TcpStream
+                    let mut buffer = [0; 1024]; // mutable buffer to read the stream
+                    match stream.read(&mut buffer) {
+                        Ok(_) => {
+                            println!("Received request: {}", String::from_utf8_lossy(&buffer));
+                        }
+                        Err(e) => println!("Failed to read from stream: {}", e),
+                    }
+                }
+                Err(e) => println!("Failed to accept connection: {}", e),
+            }
+        }
     }
 }

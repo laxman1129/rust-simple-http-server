@@ -37,3 +37,11 @@ every file in rust is a module, and the file name is the module name.
 - we can use `super` to access items in the parent module
 - we can use `self` to access items in the current module
 - we can use `use` keyword to bring items from a module into scope
+
+## binding TCP socket
+ - we can use `TcpListener` to bind to a TCP socket from the `std::net` module
+
+### sending the data
+ - `echo tst | nc 127.0.0.1 8080` can be used to send data to the server
+ - we can use browser to send a request to the server
+   - browser sends more than just the request line, it also sends headers and body
