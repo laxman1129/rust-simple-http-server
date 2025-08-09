@@ -11,4 +11,16 @@ cd server
 cargo run
 ```
 
-##
+## implementation
+
+```text
+GET /user?id=10 HTTP/1.1\r\n
+HEADERS \r\n
+BODY
+```
+
+we'll parse the request line, and process it.
+- the request contains a 
+  - method, 
+  - path, and 
+  - query string

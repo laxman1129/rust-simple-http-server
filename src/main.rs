@@ -32,3 +32,59 @@ impl Server {
         println!("Server is running on {}", self.addr)
     }
 }
+
+struct Request{
+    path : String,
+    query_string: Option<String>, // `Option` is used to hold value that may be absent
+    method: Method,
+}
+
+enum Method {
+    GET,
+    POST,
+    PUT,
+    DELETE,
+    PATCH,
+    HEAD,
+    OPTIONS,
+    CONNECT,
+    TRACE,
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
