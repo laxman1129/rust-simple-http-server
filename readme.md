@@ -45,3 +45,8 @@ every file in rust is a module, and the file name is the module name.
  - `echo tst | nc 127.0.0.1 8080` can be used to send data to the server
  - we can use browser to send a request to the server
    - browser sends more than just the request line, it also sends headers and body
+
+## Using traits to convert the request to a string
+
+-  we can use `TryFrom` trait from `std::convert` module to convert the request to a string
+- `TryFrom` trait is used to convert a type into another type, and it returns a `Result` type, to handle errors
