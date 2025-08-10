@@ -82,7 +82,11 @@ impl TryFrom<&[u8]> for Request {
             path = &path[..i];
         }
 
-        todo!()
+        Ok(Self{
+            path : path.to_string(),
+            query_string : query_string,
+            method : method,
+        })
     }
 }
 
