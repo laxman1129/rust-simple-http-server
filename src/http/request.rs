@@ -1,4 +1,4 @@
-use super::method::Method;
+use super::method::{Method, MethodError};
 use std::convert::TryFrom; // using this trait to convert byte array to Request
 use std::error::Error;
 use std::fmt::Debug;
@@ -23,7 +23,7 @@ pub struct Request {
 impl TryFrom<&[u8]> for Request {
     type Error = ParseError; // custom error type for parsing errors
 
-    // GET /search?name=abc&sort=1 HTTP/1.1
+    // GET /search?name=abc&sort=1 HTTP/1.1\r\n HEADERS...
     fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
         // match str::from_utf8(buf) {
         //     Ok(req) =>{
@@ -45,8 +45,57 @@ impl TryFrom<&[u8]> for Request {
 
         let request = str::from_utf8(buf)?; // when we use `?` directly on from_utf8, compiler looks for the `From` trait implementation for `ParseError`, which we have defined
 
+        let (method, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?; // request variable is shadowed here, so we can use the same name again
+        let (mut path, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
+        let (protocol, _) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
+
+        if "HTTP/1.1" != protocol {
+            return Err(ParseError::InvalidProtocol);
+        }
+
+        // using the `FromStr` trait implementation for `Method`, which we have defined in `method.rs`,
+        // also implemented `From` trait for `ParseError` to convert `MethodError` to `ParseError`
+        // provide type so that we can use `FromStr` trait to parse the method
+        let method: Method = method.parse()?;
+
+        let mut query_string = None;
+        // match path.find("?") {
+        //     Some(i) => {
+        //         query_string = Some(&path[i+1..]);
+        //         path = &path[..i];
+        //     },
+        //     None => {}
+        // }
+
+
+        // when we are only interested in the Some part of the Option, we can use is_some
+        // let q = path.find('?');
+        // if q.is_some() {
+        //     let i = q.unwrap();
+        //     query_string = Some(path[i + 1..].to_string()); // convert to String
+        //     path = &path[..i];
+        // };
+
+        // we can also use `if let` to match the Some part of the Option, this is more idiomatic in Rust
+        if let Some(i) = path.find('?'){
+            query_string = Some(path[i + 1..].to_string());
+            path = &path[..i];
+        }
+
         todo!()
     }
+}
+
+fn get_next_word(request: &str) -> Option<(&str, &str)> {
+    for (i, c) in request.chars().enumerate() {
+        if c == ' ' || c == '\r' {
+            return Some((
+                &request[..i],     // string token till ' '
+                &request[i + 1..], // string token after ' ', excluding the space , since we are delimiting by  ' ' i+1 is safe , in case of random chars like Unicode characters, we may have issue
+            ));
+        }
+    }
+    None
 }
 
 // custom error
@@ -88,5 +137,12 @@ impl Error for ParseError {}
 impl From<Utf8Error> for ParseError {
     fn from(_: Utf8Error) -> Self {
         Self::InvalidEncoding
+    }
+}
+
+// `From` trait implementation for `MethodError` to convert to `ParseError`
+impl From<MethodError> for ParseError {
+    fn from(_: MethodError) -> Self {
+        self::ParseError::InvalidMethod
     }
 }
