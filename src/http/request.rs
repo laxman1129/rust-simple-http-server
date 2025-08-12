@@ -7,9 +7,13 @@ use std::str;
 use std::str::Utf8Error;
 
 // for converting byte array to string
-pub struct Request {
-    path: String,
-    query_string: Option<String>, // `Option` is used to hold value that may be absent
+pub struct Request<'buf> {
+    // without lifetime, we can use String instead of &str
+    // path: String,
+    // query_string: Option<String>, // `Option` is used to hold value that may be absent
+
+    path: &'buf str,
+    query_string: Option<&'buf str>, // `Option` is used to hold value that may be absent
     method: Method,
 }
 
@@ -20,11 +24,11 @@ pub struct Request {
 // }
 
 // this is a trait that allows us to convert a type into another type
-impl TryFrom<&[u8]> for Request {
+impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
     type Error = ParseError; // custom error type for parsing errors
 
     // GET /search?name=abc&sort=1 HTTP/1.1\r\n HEADERS...
-    fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
+    fn try_from(buf: &'buf [u8]) -> Result<Request<'buf>, Self::Error> {
         // match str::from_utf8(buf) {
         //     Ok(req) =>{
         //         todo!()
@@ -78,14 +82,14 @@ impl TryFrom<&[u8]> for Request {
 
         // we can also use `if let` to match the Some part of the Option, this is more idiomatic in Rust
         if let Some(i) = path.find('?'){
-            query_string = Some(path[i + 1..].to_string());
+            query_string = Some(&path[i + 1..]); //  Some(path[i + 1..].to_string()) String
             path = &path[..i];
         }
 
         Ok(Self{
-            path : path.to_string(),
-            query_string : query_string,
-            method : method,
+            path, // path.to_string() : String
+            query_string,
+            method,
         })
     }
 }
