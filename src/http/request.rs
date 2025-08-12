@@ -1,3 +1,4 @@
+use super::QueryString;
 use super::method::{Method, MethodError};
 use std::convert::TryFrom; // using this trait to convert byte array to Request
 use std::error::Error;
@@ -11,9 +12,8 @@ pub struct Request<'buf> {
     // without lifetime, we can use String instead of &str
     // path: String,
     // query_string: Option<String>, // `Option` is used to hold value that may be absent
-
     path: &'buf str,
-    query_string: Option<&'buf str>, // `Option` is used to hold value that may be absent
+    query_string: Option<QueryString<'buf>>, // `Option` is used to hold value that may be absent
     method: Method,
 }
 
@@ -71,7 +71,6 @@ impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
         //     None => {}
         // }
 
-
         // when we are only interested in the Some part of the Option, we can use is_some
         // let q = path.find('?');
         // if q.is_some() {
@@ -81,12 +80,14 @@ impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
         // };
 
         // we can also use `if let` to match the Some part of the Option, this is more idiomatic in Rust
-        if let Some(i) = path.find('?'){
-            query_string = Some(&path[i + 1..]); //  Some(path[i + 1..].to_string()) String
+        if let Some(i) = path.find('?') {
+            // before using QueryString impl
+            // query_string = Some(&path[i + 1..]); //  Some(path[i + 1..].to_string()) String
+            query_string = Some(QueryString::from(&path[i + 1..])); //  Some(path[i + 1..].to_string()) String
             path = &path[..i];
         }
 
-        Ok(Self{
+        Ok(Self {
             path, // path.to_string() : String
             query_string,
             method,
