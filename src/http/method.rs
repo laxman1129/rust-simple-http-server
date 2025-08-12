@@ -1,5 +1,6 @@
 use std::str::FromStr; // to convert string to Method 
 
+#[derive(Debug)]
 pub enum Method {
     GET,
     POST,

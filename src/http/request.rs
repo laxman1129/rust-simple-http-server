@@ -8,6 +8,7 @@ use std::str;
 use std::str::Utf8Error;
 
 // for converting byte array to string
+#[derive(Debug)]
 pub struct Request<'buf> {
     // without lifetime, we can use String instead of &str
     // path: String,
