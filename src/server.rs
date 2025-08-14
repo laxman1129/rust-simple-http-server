@@ -1,9 +1,10 @@
-use std::io::Read; // using this trait to read from the stream
+use std::io::{Read, Write}; // using this trait to read from the stream
 use std::net::TcpListener;
 
-use crate::http::Request; // using `crate` to refer to the root of the current crate
+use crate::http::{Request, Response, StatusCode}; // using `crate` to refer to the root of the current crate
 use std::convert::TryFrom; // using this trait to convert byte array to Request
-use std::convert::TryInto; // using this trait to convert byte array to Request
+
+// using this trait to convert byte array to Request
 /**
  * Server struct definition
  */
@@ -50,7 +51,6 @@ impl Server {
                         Ok(_) => {
                             println!("Received request: {}", String::from_utf8_lossy(&buffer));
 
-
                             // Request::try_from(&[buffer]); // this results in an error as we are passing a slice of bytes, not a byte array
                             // Request::try_from(&buffer as &[u8]); // one way
 
@@ -58,12 +58,27 @@ impl Server {
                             // we have to add use std::convert::TryInto; at the top of the file to use this trait
                             // let res: &Result<Request, _> = &buffer[..].try_into(); // have to specify the type we want to convert to, as this is a generic function
 
-                           match Request::try_from(&buffer[..]){
-                               Ok(request)=>{
+                            let response = match Request::try_from(&buffer[..]) {
+                                Ok(request) => {
                                     dbg!(request);
-                               },
-                               Err(e) => println!("Failed to convert buffer to Request: {:?}", e),
-                           } // this is the preferred way to pass a slice of bytes, [..] => all elements of the array
+                                    // let response = Response::new(StatusCode::NotFound, None);
+                                    let response = Response::new(
+                                        StatusCode::OK,
+                                        Some("<h1>Hello, World!</h1>".to_string()),
+                                    );
+                                    // write!(stream, "HTTP/1.1 404 Not Found\r\n\r\n").unwrap();
+                                    // write!(stream, "{}", response).unwrap(); // to be used with Display trait implementation
+                                    // response.send(&mut stream).unwrap(); // using the send method to write the response to the stream
+                                    response
+                                }
+                                Err(e) => {
+                                    println!("Failed to convert buffer to Request: {:?}", e);
+                                    Response::new(StatusCode::NotFound, None)
+                                }
+                            }; // this is the preferred way to pass a slice of bytes, [..] => all elements of the array
+                            if let Err(e) = response.send(&mut stream){
+                                println!("Failed to send response: {}", e);
+                            }
                         }
                         Err(e) => println!("Failed to read from stream: {}", e),
                     }
