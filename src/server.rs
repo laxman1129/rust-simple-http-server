@@ -1,8 +1,19 @@
 use std::io::{Read, Write}; // using this trait to read from the stream
 use std::net::TcpListener;
 
-use crate::http::{Request, Response, StatusCode}; // using `crate` to refer to the root of the current crate
+use crate::http::{ParseError, Request, Response, StatusCode}; // using `crate` to refer to the root of the current crate
 use std::convert::TryFrom; // using this trait to convert byte array to Request
+
+// custom trait
+pub trait Handler {
+    fn handle_request(&mut self, request: &Request) -> Response;
+
+    // default implementation for handling bad requests
+    fn handle_bad_request(&mut self, e: &ParseError) -> Response {
+        println!("Failed to convert buffer to Request: {:?}", e);
+        Response::new(StatusCode::NotFound, None)
+    }
+}
 
 // using this trait to convert byte array to Request
 /**
@@ -27,7 +38,7 @@ impl Server {
     /**
      * run is an instance method as it has self as the first parameter.
      */
-    pub fn run(self) {
+    pub fn run(self, mut handler: impl Handler) {
         // we are using self here, so we can access the instance variables
         // not using &self as we want to take ownership of the instance
         // not using &mut self as we are not modifying the instance
@@ -60,23 +71,25 @@ impl Server {
 
                             let response = match Request::try_from(&buffer[..]) {
                                 Ok(request) => {
-                                    dbg!(request);
-                                    // let response = Response::new(StatusCode::NotFound, None);
-                                    let response = Response::new(
-                                        StatusCode::OK,
-                                        Some("<h1>Hello, World!</h1>".to_string()),
-                                    );
-                                    // write!(stream, "HTTP/1.1 404 Not Found\r\n\r\n").unwrap();
-                                    // write!(stream, "{}", response).unwrap(); // to be used with Display trait implementation
-                                    // response.send(&mut stream).unwrap(); // using the send method to write the response to the stream
-                                    response
+                                    // dbg!(request);
+                                    // // let response = Response::new(StatusCode::NotFound, None);
+                                    // let response = Response::new(
+                                    //     StatusCode::OK,
+                                    //     Some("<h1>Hello, World!</h1>".to_string()),
+                                    // );
+                                    // // write!(stream, "HTTP/1.1 404 Not Found\r\n\r\n").unwrap();
+                                    // // write!(stream, "{}", response).unwrap(); // to be used with Display trait implementation
+                                    // // response.send(&mut stream).unwrap(); // using the send method to write the response to the stream
+                                    // response
+                                    handler.handle_request(&request)
                                 }
                                 Err(e) => {
-                                    println!("Failed to convert buffer to Request: {:?}", e);
-                                    Response::new(StatusCode::NotFound, None)
+                                    // println!("Failed to convert buffer to Request: {:?}", e);
+                                    // Response::new(StatusCode::NotFound, None)
+                                    handler.handle_bad_request(&e)
                                 }
                             }; // this is the preferred way to pass a slice of bytes, [..] => all elements of the array
-                            if let Err(e) = response.send(&mut stream){
+                            if let Err(e) = response.send(&mut stream) {
                                 println!("Failed to send response: {}", e);
                             }
                         }
